@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trò Chơi Lật Thẻ Từ Vựng - Flashcard Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f4f8;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        p.instruction {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 950px;
+            perspective: 1000px;
+        }
+
+        .card {
+            height: 240px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Mặt trước (Tiếng Anh) */
+        .card-front {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .word-en {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .pos {
+            font-size: 0.9rem;
+            font-style: italic;
+            opacity: 0.85;
+            margin-bottom: 8px;
+        }
+
+        .pronunciation {
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        /* Mặt sau (Tiếng Việt & Ví dụ) */
+        .card-back {
+            background-color: #ffffff;
+            color: #2c3e50;
+            transform: rotateY(180deg);
+            border: 2px solid #3498db;
+            justify-content: space-between;
+        }
+
+        .word-vi {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-top: auto;
+            margin-bottom: auto;
+        }
+
+        .example-box {
+            font-size: 0.85rem;
+            text-align: left;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border-radius: 8px;
+            border-left: 3px solid #2ecc71;
+            width: 100%;
+            overflow-y: auto;
+            max-height: 100px;
+        }
+
+        .audio-icon {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 1.2rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🃏 Trò Chơi Lật Thẻ Từ Vựng</h1>
+    <p class="instruction">Nhấp vào thẻ bất kỳ để xem nghĩa, ví dụ và tự động nghe phát âm chuẩn!</p>
+
+    <div class="game-container" id="gameContainer"></div>
+
+    <script>
+        // Dữ liệu từ vựng được trích xuất hoàn toàn từ ảnh của bạn
+        const vocabularyData = [
+            {
+                word: "Prominent",
+                pronunciation: "/ˈprɑːmɪnənt/",
+                pos: "(adj.)",
+                meaning: "nổi bật, nổi tiếng, đáng chú ý",
+                example: "She plays a prominent role in the local environmental campaign."
+            },
+            {
+                word: "Alleviate",
+                pronunciation: "/əˈliːvieɪt/",
+                pos: "(v.)",
+                meaning: "làm giảm bớt, xoa dịu (đau đơn, khó khăn, căng thẳng)",
+                example: "The government is taking steps to alleviate poverty in rural areas."
+            },
+            {
+                word: "Authentic cultural exposure",
+                pronunciation: "/ɔːˈθentɪk ˈkʌltʃərəl ɪkˈspoʊʒər/",
+                pos: "(n. phr.)",
+                meaning: "sự tiếp xúc/trải nghiệm văn hóa chân thực",
+                example: "Living with a host family provided her with deep, authentic cultural exposure."
+            },
+            {
+                word: "Off-the-beaten-track",
+                pronunciation: "/ˌɔːf ðə ˌbiːtn ˈtræk/",
+                pos: "(adj.)",
+                meaning: "ở nơi ít người biết đến, xa các tuyến du lịch phổ biến",
+                example: "We decided to visit an off-the-beaten-track island to avoid the crowds."
+            },
+            {
+                word: "Spontaneous",
+                pronunciation: "/spɑːnˈteɪniəs/",
+                pos: "(adj.)",
+                meaning: "tự phát, ngẫu hứng, không lên kế hoạch trước",
+                example: "Sometimes, a spontaneous road trip is much more fun than a planned one."
+            },
+            {
+                word: "Seamless",
+                pronunciation: "/ˈsiːmləs/",
+                pos: "(adj.)",
+                meaning: "liền mạch, suôn sẻ, không gặp trở ngại",
+                example: "The transition from the old software to the new one was seamless."
+            }
+        ];
+
+        const gameContainer = document.getElementById('gameContainer');
+
+        // Hàm xử lý giọng đọc tiếng Anh
+        function speak(text) {
+            // Hủy giọng đọc cũ nếu người dùng bấm lật liên tục để tránh đè âm thanh
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; 
+            utterance.rate = 0.85; // Tốc độ hơi chậm một chút để nghe rõ cách phát âm
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Khởi tạo thẻ lật trong giao diện
+        vocabularyData.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+
+            card.innerHTML = `
+                <div class="card-face card-front">
+                    <div class="audio-icon">🔊</div>
+                    <div class="word-en">${item.word}</div>
+                    <div class="pos">${item.pos}</div>
+                    <div class="pronunciation">${item.pronunciation}</div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="word-vi">${item.meaning}</div>
+                    <div class="example-box">
+                        <strong>Ví dụ:</strong><br>
+                        ${item.example}
+                    </div>
+                </div>
+            `;
+
+            // Bắt sự kiện click
+            card.addEventListener('click', () => {
+                card.classList.toggle('flipped');
+                // Gọi hàm phát âm từ vựng tiếng Anh
+                speak(item.word);
+            });
+
+            gameContainer.appendChild(card);
+        });
+    </script>
+</body>
+</html>
