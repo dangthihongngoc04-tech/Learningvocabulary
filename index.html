@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trò Chơi Lật Thẻ Từ Vựng - Flashcard Game</title>
+    <title>Trò Chơi Ghép Đôi Từ Vựng - Memory Game</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +13,7 @@
         }
 
         body {
-            background-color: #f0f4f8;
+            background-color: #f4f7f6;
             color: #333;
             display: flex;
             flex-direction: column;
@@ -23,215 +23,265 @@
         }
 
         h1 {
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             color: #2c3e50;
             text-align: center;
         }
 
         p.instruction {
             color: #7f8c8d;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             text-align: center;
-            font-size: 1.1rem;
+            max-width: 600px;
+            font-size: 1rem;
         }
 
-        .game-container {
+        /* Lưới chứa các thẻ bài */
+        .game-board {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
             width: 100%;
-            max-width: 950px;
+            max-width: 800px;
             perspective: 1000px;
         }
 
+        /* Định hình thẻ bài */
         .card {
-            height: 240px;
+            height: 140px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
         }
 
+        /* Trạng thái lật thẻ */
         .card.flipped {
             transform: rotateY(180deg);
         }
 
+        /* Trạng thái ẩn thẻ khi ghép đúng */
+        .card.matched {
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s 0.5s, opacity 0.5s linear;
+        }
+
+        /* Các mặt của thẻ bài */
         .card-face {
             position: absolute;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
         }
 
-        /* Mặt trước (Tiếng Anh) */
-        .card-front {
+        /* Mặt Úp (Mặt lưng chung của các thẻ) */
+        .card-back {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #ecf0f1;
+            font-size: 2rem;
+        }
+
+        /* Mặt Ngửa của thẻ Tiếng Anh */
+        .card-front-en {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
-        }
-
-        .word-en {
-            font-size: 1.4rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        .pos {
-            font-size: 0.9rem;
-            font-style: italic;
-            opacity: 0.85;
-            margin-bottom: 8px;
-        }
-
-        .pronunciation {
-            font-size: 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 4px 10px;
-            border-radius: 20px;
-        }
-
-        /* Mặt sau (Tiếng Việt & Ví dụ) */
-        .card-back {
-            background-color: #ffffff;
-            color: #2c3e50;
             transform: rotateY(180deg);
-            border: 2px solid #3498db;
-            justify-content: space-between;
         }
 
-        .word-vi {
-            font-size: 1.15rem;
-            font-weight: bold;
-            color: #e74c3c;
-            margin-top: auto;
-            margin-bottom: auto;
-        }
-
-        .example-box {
-            font-size: 0.85rem;
-            text-align: left;
-            background-color: #f8f9fa;
-            padding: 8px;
-            border-radius: 8px;
-            border-left: 3px solid #2ecc71;
-            width: 100%;
-            overflow-y: auto;
-            max-height: 100px;
+        /* Mặt Ngửa của thẻ Tiếng Việt */
+        .card-front-vi {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            color: white;
+            transform: rotateY(180deg);
+            font-size: 1rem;
         }
 
         .audio-icon {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            font-size: 1.2rem;
-            opacity: 0.7;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        /* Responsive cho màn hình điện thoại */
+        @media (max-width: 600px) {
+            .game-board {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+            .card {
+                height: 110px;
+            }
+            .card-face {
+                font-size: 0.95rem;
+            }
+            .card-front-vi {
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <h1>🃏 Trò Chơi Lật Thẻ Từ Vựng</h1>
-    <p class="instruction">Nhấp vào thẻ bất kỳ để xem nghĩa, ví dụ và tự động nghe phát âm chuẩn!</p>
+    <h1>🧩 Trò Chơi Ghép Cặp Từ Vựng</h1>
+    <p class="instruction">Hãy lật một thẻ Tiếng Anh (Màu xanh) và một thẻ Tiếng Việt (Màu cam) có nghĩa khớp nhau. Nếu đúng, cặp thẻ sẽ biến mất. Khi lật thẻ Tiếng Anh, máy sẽ phát âm!</p>
 
-    <div class="game-container" id="gameContainer"></div>
+    <div class="game-board" id="gameBoard"></div>
 
     <script>
-        // Dữ liệu từ vựng được trích xuất hoàn toàn từ ảnh của bạn
-        const vocabularyData = [
-            {
-                word: "Prominent",
-                pronunciation: "/ˈprɑːmɪnənt/",
-                pos: "(adj.)",
-                meaning: "nổi bật, nổi tiếng, đáng chú ý",
-                example: "She plays a prominent role in the local environmental campaign."
-            },
-            {
-                word: "Alleviate",
-                pronunciation: "/əˈliːvieɪt/",
-                pos: "(v.)",
-                meaning: "làm giảm bớt, xoa dịu (đau đơn, khó khăn, căng thẳng)",
-                example: "The government is taking steps to alleviate poverty in rural areas."
-            },
-            {
-                word: "Authentic cultural exposure",
-                pronunciation: "/ɔːˈθentɪk ˈkʌltʃərəl ɪkˈspoʊʒər/",
-                pos: "(n. phr.)",
-                meaning: "sự tiếp xúc/trải nghiệm văn hóa chân thực",
-                example: "Living with a host family provided her with deep, authentic cultural exposure."
-            },
-            {
-                word: "Off-the-beaten-track",
-                pronunciation: "/ˌɔːf ðə ˌbiːtn ˈtræk/",
-                pos: "(adj.)",
-                meaning: "ở nơi ít người biết đến, xa các tuyến du lịch phổ biến",
-                example: "We decided to visit an off-the-beaten-track island to avoid the crowds."
-            },
-            {
-                word: "Spontaneous",
-                pronunciation: "/spɑːnˈteɪniəs/",
-                pos: "(adj.)",
-                meaning: "tự phát, ngẫu hứng, không lên kế hoạch trước",
-                example: "Sometimes, a spontaneous road trip is much more fun than a planned one."
-            },
-            {
-                word: "Seamless",
-                pronunciation: "/ˈsiːmləs/",
-                pos: "(adj.)",
-                meaning: "liền mạch, suôn sẻ, không gặp trở ngại",
-                example: "The transition from the old software to the new one was seamless."
-            }
+        // Danh sách từ vựng gốc thu thập từ ảnh của bạn
+        const baseVocabulary = [
+            { id: 1, en: "Prominent", vi: "nổi bật, nổi tiếng, đáng chú ý" },
+            { id: 2, en: "Alleviate", vi: "làm giảm bớt, xoa dịu" },
+            { id: 3, en: "Authentic cultural exposure", vi: "sự tiếp xúc văn hóa chân thực" },
+            { id: 4, en: "Off-the-beaten-track", vi: "ở nơi ít người biết đến" },
+            { id: 5, en: "Spontaneous", vi: "tự phát, ngẫu hứng" },
+            { id: 6, en: "Seamless", vi: "liền mạch, suôn sẻ" }
         ];
 
-        const gameContainer = document.getElementById('gameContainer');
+        let cardsData = [];
+        let flippedCards = [];
+        let lockBoard = false;
 
-        // Hàm xử lý giọng đọc tiếng Anh
+        // Tạo danh sách thẻ tách rời gồm cả thẻ Anh và thẻ Việt
+        baseVocabulary.forEach(item => {
+            // Thẻ tiếng Anh
+            cardsData.push({
+                matchId: item.id,
+                type: 'en',
+                text: item.en
+            });
+            // Thẻ tiếng Việt
+            cardsData.push({
+                matchId: item.id,
+                type: 'vi',
+                text: item.vi
+            });
+        });
+
+        // Hàm xáo trộn mảng (Thuật toán Fisher-Yates) để mỗi lần chơi vị trí thẻ khác nhau
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Hàm phát âm tiếng Anh
         function speak(text) {
-            // Hủy giọng đọc cũ nếu người dùng bấm lật liên tục để tránh đè âm thanh
-            window.speechSynthesis.cancel();
-            
+            window.speechSynthesis.cancel(); // Tắt âm cũ nếu click nhanh
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; 
-            utterance.rate = 0.85; // Tốc độ hơi chậm một chút để nghe rõ cách phát âm
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85; // Tốc độ nói vừa phải
             window.speechSynthesis.speak(utterance);
         }
 
-        // Khởi tạo thẻ lật trong giao diện
-        vocabularyData.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card';
+        const gameBoard = document.getElementById('gameBoard');
 
-            card.innerHTML = `
-                <div class="card-face card-front">
-                    <div class="audio-icon">🔊</div>
-                    <div class="word-en">${item.word}</div>
-                    <div class="pos">${item.pos}</div>
-                    <div class="pronunciation">${item.pronunciation}</div>
-                </div>
-                <div class="card-face card-back">
-                    <div class="word-vi">${item.meaning}</div>
-                    <div class="example-box">
-                        <strong>Ví dụ:</strong><br>
-                        ${item.example}
+        // Tạo giao diện bàn cờ game
+        function createBoard() {
+            const shuffledCards = shuffle(cardsData);
+            
+            shuffledCards.forEach(cardInfo => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.matchId = cardInfo.matchId;
+                card.dataset.type = cardInfo.type;
+                card.dataset.text = cardInfo.text;
+
+                // Xác định class màu sắc dựa trên ngôn ngữ thẻ
+                const frontClass = cardInfo.type === 'en' ? 'card-front-en' : 'card-front-vi';
+                const audioLabel = cardInfo.type === 'en' ? '<div class="audio-icon">🔊 Đang đọc...</div>' : '';
+
+                card.innerHTML = `
+                    <div class="card-face card-back">?</div>
+                    <div class="card-face ${frontClass}">
+                        <div>${cardInfo.text}</div>
+                        ${audioLabel}
                     </div>
-                </div>
-            `;
+                `;
 
-            // Bắt sự kiện click
-            card.addEventListener('click', () => {
-                card.classList.toggle('flipped');
-                // Gọi hàm phát âm từ vựng tiếng Anh
-                speak(item.word);
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
             });
+        }
 
-            gameContainer.appendChild(card);
-        });
+        // Xử lý khi người dùng ấn lật thẻ
+        function flipCard() {
+            if (lockBoard) return; // Khóa bàn cờ khi đang đợi kiểm tra 2 thẻ trước
+            if (this === flippedCards[0]) return; // Không cho click 2 lần vào cùng 1 thẻ
+
+            this.classList.add('flipped');
+
+            // Nếu lật trúng thẻ tiếng Anh -> Phát âm luôn
+            if (this.dataset.type === 'en') {
+                speak(this.dataset.text);
+            }
+
+            flippedCards.push(this);
+
+            // Khi đã lật đủ 2 thẻ, tiến hành kiểm tra
+            if (flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        // Kiểm tra xem 2 thẻ có khớp cặp không
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            
+            // So sánh ID cặp từ vựng của 2 thẻ
+            const isMatch = card1.dataset.matchId === card2.dataset.matchId;
+
+            if (isMatch) {
+                disableCards(); // Nếu đúng -> Biến mất
+            } else {
+                unflipCards(); // Nếu sai -> Úp lại
+            }
+        }
+
+        // Xử lý khi ghép ĐÚNG cặp
+        function disableCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                flippedCards[0].classList.add('matched');
+                flippedCards[1].classList.add('matched');
+                
+                resetTurn();
+            }, 600); // Đợi hiệu ứng lật hoàn thành rồi ẩn đi
+        }
+
+        // Xử lý khi ghép SAI cặp
+        function unflipCards() {
+            lockBoard = true;
+
+            setTimeout(() => {
+                flippedCards[0].classList.remove('flipped');
+                flippedCards[1].classList.remove('flipped');
+
+                resetTurn();
+            }, 1300); // Cho người học nhìn thẻ sai trong 1.3 giây trước khi tự úp lại
+        }
+
+        // Khởi động lại lượt chọn mới
+        function resetTurn() {
+            flippedCards = [];
+            lockBoard = false;
+        }
+
+        // Bắt đầu game
+        createBoard();
     </script>
 </body>
 </html>
